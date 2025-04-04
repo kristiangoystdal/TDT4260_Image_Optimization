@@ -10,7 +10,7 @@
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 typedef struct {
-     double red,green,blue;
+     float red,green,blue;
 } AccuratePixel;
 
 typedef struct {
@@ -53,40 +53,57 @@ PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
 
 // blur one color channel
 void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourType, int size) {
-	
-	// Iterate over each pixel
-	for(int senterX = 0; senterX < imageIn->x; senterX++) {
 
-		for(int senterY = 0; senterY < imageIn->y; senterY++) {
+	int numberOfValuesInEachRow_In = imageIn->x;
+	int numberOfValuesInEachColumn_In = imageIn->y;
+	
+	int numberOfValuesInEachRow_Out = imageOut->x;
+	int numberOfValuesInEachColumn_Out = imageOut->y;
+
+	AccuratePixel *imageInData = imageIn->data;
+	AccuratePixel *ImageInData = imageInData;
+
+
+
+	float sum = 0;
+	int countIncluded = 0;
+
+	// Iterate over each pixel
+
+	// #pragma omp parallel for collapse(2) private(sum, countIncluded)
+	for(int senterX = 0; senterX < numberOfValuesInEachRow_In; senterX++) {
+
+		for(int senterY = 0; senterY < numberOfValuesInEachColumn_In; senterY++) {
 
 			// For each pixel we compute the magic number
-			double sum = 0;
-			int countIncluded = 0;
-			for(int x = -size; x <= size; x++) {
+			sum = 0;
+			countIncluded = 0;
 
-				for(int y = -size; y <= size; y++) {
+
+			for(int y = -size; y <= size; y++) {
+				int currentY = senterY + y;
+
+				// Check if we are outside the bounds
+				if(currentY < 0 || currentY >= numberOfValuesInEachColumn_In)
+					continue;
+
+
+				for(int x = -size; x <= size; x++) {
 					int currentX = senterX + x;
-					int currentY = senterY + y;
 
 					// Check if we are outside the bounds
-					if(currentX < 0)
-						continue;
-					if(currentX >= imageIn->x)
-						continue;
-					if(currentY < 0)
-						continue;
-					if(currentY >= imageIn->y)
+					if(currentX < 0 || currentX >= numberOfValuesInEachRow_In)
 						continue;
 
+
 					// Now we can begin
-					int numberOfValuesInEachRow = imageIn->x;
-					int offsetOfThePixel = (numberOfValuesInEachRow * currentY + currentX);
+					int offsetOfThePixel = (numberOfValuesInEachRow_In * currentY + currentX);
 					if(colourType == 0)
-						sum += imageIn->data[offsetOfThePixel].red;
-					if(colourType == 1)
-						sum += imageIn->data[offsetOfThePixel].green;
-					if(colourType == 2)
-						sum += imageIn->data[offsetOfThePixel].blue;
+						sum += ImageInData[offsetOfThePixel].red;
+					else if(colourType == 1)
+						sum += ImageInData[offsetOfThePixel].green;
+					else if(colourType == 2)
+						sum += ImageInData[offsetOfThePixel].blue;
 
 					// Keep track of how many values we have included
 					countIncluded++;
@@ -99,18 +116,18 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 
 
 			// Update the output image
-			int numberOfValuesInEachRow = imageOut->x; // R, G and B
-			int offsetOfThePixel = (numberOfValuesInEachRow * senterY + senterX);
+			int offsetOfThePixel = (numberOfValuesInEachRow_Out * senterY + senterX);
+
+		
 			if(colourType == 0)
 				imageOut->data[offsetOfThePixel].red = value;
-			if(colourType == 1)
+			else if(colourType == 1)
 				imageOut->data[offsetOfThePixel].green = value;
-			if(colourType == 2)
+			else if(colourType == 2)
 				imageOut->data[offsetOfThePixel].blue = value;
 		}
 
 	}
-	
 }
 
 
@@ -124,7 +141,7 @@ PPMImage * imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLa
 	imageOut->y = imageInSmall->y;
 
 	for(int i = 0; i < imageInSmall->x * imageInSmall->y; i++) {
-		double value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
+		float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 		if(value > 255)
 			imageOut->data[i].red = 255;
 		else if (value < -1.0) {
