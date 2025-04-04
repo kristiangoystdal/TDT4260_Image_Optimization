@@ -1,22 +1,13 @@
-# Ignore everything
-*
+# Object files
+*.o
 
-# But NOT these files (negate the ignore with '!')
-!.gitignore
+# Output binaries
+checker
+image_processing_c
+image_processing_reference
 
-# Source files
-!checker_small.cpp
-!checker.c
-!CMakeLists.txt
-!description.pdf
-!flower.ppm
-!image_processing_baseline.c
-!image_processing_c.c
-!image_processing_opencl.cl
-!image_processing_opencl.cpp
-!image_processing_reference.c
-!Makefile
-!ppm.c
-!ppm.h
-!small_answer.txt
-!small_input.txt
+# Flower images
+flower_*.ppm
+
+# Profiling data
+perf.data
