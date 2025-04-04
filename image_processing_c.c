@@ -61,8 +61,6 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 	int numberOfValuesInEachColumn_Out = imageOut->y;
 
 	AccuratePixel *imageInData = imageIn->data;
-	AccuratePixel *ImageInData = imageInData;
-
 
 
 	float sum = 0;
@@ -70,7 +68,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 
 	// Iterate over each pixel
 
-	// #pragma omp parallel for collapse(2) private(sum, countIncluded)
+	#pragma omp parallel for collapse(2) private(sum, countIncluded)
 	for(int senterX = 0; senterX < numberOfValuesInEachRow_In; senterX++) {
 
 		for(int senterY = 0; senterY < numberOfValuesInEachColumn_In; senterY++) {
@@ -99,11 +97,11 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 					// Now we can begin
 					int offsetOfThePixel = (numberOfValuesInEachRow_In * currentY + currentX);
 					if(colourType == 0)
-						sum += ImageInData[offsetOfThePixel].red;
+						sum += imageInData[offsetOfThePixel].red;
 					else if(colourType == 1)
-						sum += ImageInData[offsetOfThePixel].green;
+						sum += imageInData[offsetOfThePixel].green;
 					else if(colourType == 2)
-						sum += ImageInData[offsetOfThePixel].blue;
+						sum += imageInData[offsetOfThePixel].blue;
 
 					// Keep track of how many values we have included
 					countIncluded++;
