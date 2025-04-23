@@ -14,16 +14,16 @@ typedef struct {
 } AccurateImage;
 
 AccurateImage *convertToAccurateImage(PPMImage *image) {
-	AccurateImage *imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
-	imageAccurate->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
-	for(int i = 0; i < image->x * image->y; i++) {
-		imageAccurate->data[i].red   = (float) image->data[i].red;
-		imageAccurate->data[i].green = (float) image->data[i].green;
-		imageAccurate->data[i].blue  = (float) image->data[i].blue;
-	}
-	imageAccurate->x = image->x;
-	imageAccurate->y = image->y;
-	return imageAccurate;
+    AccurateImage *imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
+    imageAccurate->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+    for(int i = 0; i < image->x * image->y; i++) {
+        imageAccurate->data[i].red   = (float) image->data[i].red;
+        imageAccurate->data[i].green = (float) image->data[i].green;
+        imageAccurate->data[i].blue  = (float) image->data[i].blue;
+    }
+    imageAccurate->x = image->x;
+    imageAccurate->y = image->y;
+    return imageAccurate;
 }
 
 PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
@@ -39,7 +39,7 @@ PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
     return imageOut;
 }
 
-void separableBlurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourType, int size) {
+void blurRunningSum(AccurateImage * restrict imageOut, AccurateImage * restrict imageIn, int colourType, int size) {
     int width = imageIn->x;
     int height = imageIn->y;
 
@@ -48,47 +48,71 @@ void separableBlurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int
     temp->y = height;
     temp->data = (AccuratePixel *)malloc(width * height * sizeof(AccuratePixel));
 
+    // Horizontal running sum
     #pragma omp parallel for
     for (int y = 0; y < height; y++) {
+        float sum = 0;
+        int count = 0;
+
         for (int x = 0; x < width; x++) {
-            float sum = 0;
-            int count = 0;
-            for (int dx = -size; dx <= size; dx++) {
-                int nx = x + dx;
-                if (nx >= 0 && nx < width) {
-                    int idx = y * width + nx;
-                    if (colourType == 0) sum += imageIn->data[idx].red;
-                    else if (colourType == 1) sum += imageIn->data[idx].green;
-                    else sum += imageIn->data[idx].blue;
-                    count++;
-                }
+            int left = x - size - 1;
+            int right = x + size;
+
+            if (left >= 0) {
+                int idx = y * width + left;
+                if (colourType == 0) sum -= imageIn->data[idx].red;
+                else if (colourType == 1) sum -= imageIn->data[idx].green;
+                else sum -= imageIn->data[idx].blue;
+                count--;
             }
+            if (right < width) {
+                int idx = y * width + right;
+                if (colourType == 0) sum += imageIn->data[idx].red;
+                else if (colourType == 1) sum += imageIn->data[idx].green;
+                else sum += imageIn->data[idx].blue;
+                count++;
+            }
+
             int idx = y * width + x;
-            if (colourType == 0) temp->data[idx].red = sum / count;
-            else if (colourType == 1) temp->data[idx].green = sum / count;
-            else temp->data[idx].blue = sum / count;
+            if (count > 0) {
+                if (colourType == 0) temp->data[idx].red = sum / count;
+                else if (colourType == 1) temp->data[idx].green = sum / count;
+                else temp->data[idx].blue = sum / count;
+            }
         }
     }
 
+    // Vertical running sum
     #pragma omp parallel for
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            float sum = 0;
-            int count = 0;
-            for (int dy = -size; dy <= size; dy++) {
-                int ny = y + dy;
-                if (ny >= 0 && ny < height) {
-                    int idx = ny * width + x;
-                    if (colourType == 0) sum += temp->data[idx].red;
-                    else if (colourType == 1) sum += temp->data[idx].green;
-                    else sum += temp->data[idx].blue;
-                    count++;
-                }
+    for (int x = 0; x < width; x++) {
+        float sum = 0;
+        int count = 0;
+
+        for (int y = 0; y < height; y++) {
+            int top = y - size - 1;
+            int bottom = y + size;
+
+            if (top >= 0) {
+                int idx = top * width + x;
+                if (colourType == 0) sum -= temp->data[idx].red;
+                else if (colourType == 1) sum -= temp->data[idx].green;
+                else sum -= temp->data[idx].blue;
+                count--;
             }
+            if (bottom < height) {
+                int idx = bottom * width + x;
+                if (colourType == 0) sum += temp->data[idx].red;
+                else if (colourType == 1) sum += temp->data[idx].green;
+                else sum += temp->data[idx].blue;
+                count++;
+            }
+
             int idx = y * width + x;
-            if (colourType == 0) imageOut->data[idx].red = sum / count;
-            else if (colourType == 1) imageOut->data[idx].green = sum / count;
-            else imageOut->data[idx].blue = sum / count;
+            if (count > 0) {
+                if (colourType == 0) imageOut->data[idx].red = sum / count;
+                else if (colourType == 1) imageOut->data[idx].green = sum / count;
+                else imageOut->data[idx].blue = sum / count;
+            }
         }
     }
 
@@ -105,27 +129,21 @@ PPMImage * imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLa
     for(int i = 0; i < imageInSmall->x * imageInSmall->y; i++) {
         float value = imageInLarge->data[i].red - imageInSmall->data[i].red;
         if(value > 255) imageOut->data[i].red = 255;
-        else if (value < -1.0) {
-            value = 257.0 + value;
-            imageOut->data[i].red = value > 255 ? 255 : floor(value);
-        } else if (value > -1.0 && value < 0.0) imageOut->data[i].red = 0;
-        else imageOut->data[i].red = floor(value);
+        else if (value < -1.0) value = fmin(255, 257.0 + value);
+        else if (value > -1.0 && value < 0.0) value = 0;
+        imageOut->data[i].red = floor(value);
 
         value = imageInLarge->data[i].green - imageInSmall->data[i].green;
         if(value > 255) imageOut->data[i].green = 255;
-        else if (value < -1.0) {
-            value = 257.0 + value;
-            imageOut->data[i].green = value > 255 ? 255 : floor(value);
-        } else if (value > -1.0 && value < 0.0) imageOut->data[i].green = 0;
-        else imageOut->data[i].green = floor(value);
+        else if (value < -1.0) value = fmin(255, 257.0 + value);
+        else if (value > -1.0 && value < 0.0) value = 0;
+        imageOut->data[i].green = floor(value);
 
         value = imageInLarge->data[i].blue - imageInSmall->data[i].blue;
         if(value > 255) imageOut->data[i].blue = 255;
-        else if (value < -1.0) {
-            value = 257.0 + value;
-            imageOut->data[i].blue = value > 255 ? 255 : floor(value);
-        } else if (value > -1.0 && value < 0.0) imageOut->data[i].blue = 0;
-        else imageOut->data[i].blue = floor(value);
+        else if (value < -1.0) value = fmin(255, 257.0 + value);
+        else if (value > -1.0 && value < 0.0) value = 0;
+        imageOut->data[i].blue = floor(value);
     }
     return imageOut;
 }
@@ -137,44 +155,44 @@ int main(int argc, char** argv) {
     AccurateImage *imageAccurate2_tiny = convertToAccurateImage(image);
     for(int colour = 0; colour < 3; colour++) {
         int size = 2;
-        separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
-        separableBlurIteration(imageAccurate1_tiny, imageAccurate2_tiny, colour, size);
-        separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
-        separableBlurIteration(imageAccurate1_tiny, imageAccurate2_tiny, colour, size);
-        separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
+        blurRunningSum(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
+        blurRunningSum(imageAccurate1_tiny, imageAccurate2_tiny, colour, size);
+        blurRunningSum(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
+        blurRunningSum(imageAccurate1_tiny, imageAccurate2_tiny, colour, size);
+        blurRunningSum(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
     }
 
     AccurateImage *imageAccurate1_small = convertToAccurateImage(image);
     AccurateImage *imageAccurate2_small = convertToAccurateImage(image);
     for(int colour = 0; colour < 3; colour++) {
         int size = 3;
-        separableBlurIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
-        separableBlurIteration(imageAccurate1_small, imageAccurate2_small, colour, size);
-        separableBlurIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
-        separableBlurIteration(imageAccurate1_small, imageAccurate2_small, colour, size);
-        separableBlurIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
+        blurRunningSum(imageAccurate2_small, imageAccurate1_small, colour, size);
+        blurRunningSum(imageAccurate1_small, imageAccurate2_small, colour, size);
+        blurRunningSum(imageAccurate2_small, imageAccurate1_small, colour, size);
+        blurRunningSum(imageAccurate1_small, imageAccurate2_small, colour, size);
+        blurRunningSum(imageAccurate2_small, imageAccurate1_small, colour, size);
     }
 
     AccurateImage *imageAccurate1_medium = convertToAccurateImage(image);
     AccurateImage *imageAccurate2_medium = convertToAccurateImage(image);
     for(int colour = 0; colour < 3; colour++) {
         int size = 5;
-        separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
-        separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, colour, size);
-        separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
-        separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, colour, size);
-        separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
+        blurRunningSum(imageAccurate2_medium, imageAccurate1_medium, colour, size);
+        blurRunningSum(imageAccurate1_medium, imageAccurate2_medium, colour, size);
+        blurRunningSum(imageAccurate2_medium, imageAccurate1_medium, colour, size);
+        blurRunningSum(imageAccurate1_medium, imageAccurate2_medium, colour, size);
+        blurRunningSum(imageAccurate2_medium, imageAccurate1_medium, colour, size);
     }
 
     AccurateImage *imageAccurate1_large = convertToAccurateImage(image);
     AccurateImage *imageAccurate2_large = convertToAccurateImage(image);
     for(int colour = 0; colour < 3; colour++) {
         int size = 8;
-        separableBlurIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
-        separableBlurIteration(imageAccurate1_large, imageAccurate2_large, colour, size);
-        separableBlurIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
-        separableBlurIteration(imageAccurate1_large, imageAccurate2_large, colour, size);
-        separableBlurIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
+        blurRunningSum(imageAccurate2_large, imageAccurate1_large, colour, size);
+        blurRunningSum(imageAccurate1_large, imageAccurate2_large, colour, size);
+        blurRunningSum(imageAccurate2_large, imageAccurate1_large, colour, size);
+        blurRunningSum(imageAccurate1_large, imageAccurate2_large, colour, size);
+        blurRunningSum(imageAccurate2_large, imageAccurate1_large, colour, size);
     }
 
     PPMImage *final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
