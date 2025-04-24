@@ -39,7 +39,7 @@ PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
     return imageOut;
 }
 
-void separableBlurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourType, int size) {
+void separableBlurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int size) {
     int width = imageIn->x;
     int height = imageIn->y;
 
@@ -151,7 +151,6 @@ int main(int argc, char** argv) {
 		AccurateImage *imageAccurate2_large = convertToAccurateImage(image);
 
 
-
 		#pragma omp parallel num_threads(4)
 		#pragma omp single
 	 	{
@@ -159,147 +158,48 @@ int main(int argc, char** argv) {
 				{			
 						int size = 2;
 
-						separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, 0, size);
-						separableBlurIteration(imageAccurate1_tiny, imageAccurate2_tiny, 0, size);
-						separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, 0, size);
-						separableBlurIteration(imageAccurate1_tiny, imageAccurate2_tiny, 0, size);
-						separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, 0, size);
+						separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, size);
+						separableBlurIteration(imageAccurate1_tiny, imageAccurate2_tiny, size);
+						separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, size);
+						separableBlurIteration(imageAccurate1_tiny, imageAccurate2_tiny, size);
+						separableBlurIteration(imageAccurate2_tiny, imageAccurate1_tiny, size);
 				}
 
 				#pragma omp task
 				{
 						int size = 3;
 
-						separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 0, size);
-						separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 0, size);
-						separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 0, size);
-						separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 0, size);
-						separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 0, size);
+						separableBlurIteration(imageAccurate2_small, imageAccurate1_small, size);
+						separableBlurIteration(imageAccurate1_small, imageAccurate2_small, size);
+						separableBlurIteration(imageAccurate2_small, imageAccurate1_small, size);
+						separableBlurIteration(imageAccurate1_small, imageAccurate2_small, size);
+						separableBlurIteration(imageAccurate2_small, imageAccurate1_small, size);
 				}
 
 				#pragma omp task
 				{
 						int size = 5;
 
-						separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 0, size);
-						separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 0, size);
-						separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 0, size);
-						separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 0, size);
-						separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 0, size);
+						separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, size);
+						separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, size);
+						separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, size);
+						separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, size);
+						separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, size);
 				}
 
 				#pragma omp task
 				{
 						int size = 8;
 
-						separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 0, size);
-						separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 0, size);
-						separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 0, size);
-						separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 0, size);
-						separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 0, size);
+						separableBlurIteration(imageAccurate2_large, imageAccurate1_large, size);
+						separableBlurIteration(imageAccurate1_large, imageAccurate2_large, size);
+						separableBlurIteration(imageAccurate2_large, imageAccurate1_large, size);
+						separableBlurIteration(imageAccurate1_large, imageAccurate2_large, size);
+						separableBlurIteration(imageAccurate2_large, imageAccurate1_large, size);
 				}
 
 		}
 
-    
-    // #pragma omp parallel
-		// {
-		// 		int size = 3;
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 0, size);
-		// 				separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 0, size);
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 0, size);
-		// 				separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 0, size);
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 0, size);
-		// 		}
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 1, size);
-		// 				separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 1, size);
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 1, size);
-		// 				separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 1, size);
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 1, size);
-		// 		}
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 2, size);
-		// 				separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 2, size);
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 2, size);
-		// 				separableBlurIteration(imageAccurate1_small, imageAccurate2_small, 2, size);
-		// 				separableBlurIteration(imageAccurate2_small, imageAccurate1_small, 2, size);
-		// 		}
-		// }
-
-    // AccurateImage *imageAccurate1_medium = convertToAccurateImage(image);
-    // AccurateImage *imageAccurate2_medium = convertToAccurateImage(image);
-    // #pragma omp parallel
-		// {
-		// 		int size = 5;
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 0, size);
-		// 				separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 0, size);
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 0, size);
-		// 				separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 0, size);
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 0, size);
-		// 		}
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 1, size);
-		// 				separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 1, size);
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 1, size);
-		// 				separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 1, size);
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 1, size);
-		// 		}
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 2, size);
-		// 				separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 2, size);
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 2, size);
-		// 				separableBlurIteration(imageAccurate1_medium, imageAccurate2_medium, 2, size);
-		// 				separableBlurIteration(imageAccurate2_medium, imageAccurate1_medium, 2, size);
-		// 		}
-		// }
-
-    // AccurateImage *imageAccurate1_large = convertToAccurateImage(image);
-    // AccurateImage *imageAccurate2_large = convertToAccurateImage(image);
-    // #pragma omp parallel
-		// {
-		// 		int size = 8;
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 0, size);
-		// 				separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 0, size);
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 0, size);
-		// 				separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 0, size);
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 0, size);
-		// 		}
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 1, size);
-		// 				separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 1, size);
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 1, size);
-		// 				separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 1, size);
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 1, size);
-		// 		}
-
-		// 		#pragma omp single
-		// 		{
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 2, size);
-		// 				separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 2, size);
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 2, size);
-		// 				separableBlurIteration(imageAccurate1_large, imageAccurate2_large, 2, size);
-		// 				separableBlurIteration(imageAccurate2_large, imageAccurate1_large, 2, size);
-		// 		}
-		// }
 
     PPMImage *final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
     PPMImage *final_small = imageDifference(imageAccurate2_small, imageAccurate2_medium);
