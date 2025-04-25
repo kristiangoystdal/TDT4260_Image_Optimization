@@ -68,10 +68,8 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 
 	// Iterate over each pixel
 
-	#pragma omp parallel for collapse(2) private(sum, countIncluded)
-	for(int senterX = 0; senterX < numberOfValuesInEachRow_In; senterX++) {
-
-		for(int senterY = 0; senterY < numberOfValuesInEachColumn_In; senterY++) {
+    for(int senterY = 0; senterY < numberOfValuesInEachColumn_In; senterY++) {
+	    for(int senterX = 0; senterX < numberOfValuesInEachRow_In; senterX++) {
 
 			// For each pixel we compute the magic number
 			sum = 0;
